@@ -5,10 +5,11 @@
 
 import logging
 import os
+from typing import List, Tuple
 from datetime import date
 import numpy as np
 import pandas as pd
-import joblib
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import LabelEncoder
@@ -27,46 +28,44 @@ if not sys.warnoptions:
 
 class CustomerSegmentation:
     def __init__(self, 
-                 current_year=date.today().year,
-                 age_cap=90, income_cap=600000,
-                 random_state=None,
-                 debug=False):
-        self.current_year = current_year
+                 pipeline: Pipeline = None,
+                 as_of_year: int = None,
+                 age_cap: int = 90,
+                 income_cap: int = 600000,
+                 debug: bool = False):
+        self.pipeline = pipeline
+        self.as_of_year = as_of_year or date.today().year
         self.age_cap = age_cap
         self.income_cap = income_cap
-        self.random_state = random_state
         self.debug = debug
             
         logging.debug(f"Customer Segmentation" +
-                      f" current_year={current_year}" +
+                      f" as_of_year={as_of_year}" +
                       f" age_cap={age_cap}" +
                       f" income_cap={income_cap}" +
-                      f" random_state={random_state}" +
                       f" debug={debug}.")
 
 
     @staticmethod
-    def read_dataset_from_file(dataset_path, test_size=0.10, random_state=None):
-        logging.debug(f"Working directory: {os.getcwd()}")
-        logging.debug(f"Read dataset from: {dataset_path}")
-        
-        # Read as a Tab-Separated-Values (*.tsv) file
-        data = pd.read_csv(dataset_path, sep="\t")
-        
+    def read_train_test_data(uri: str, test_size: float, random_state: int = 42) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        # Read training dataset (assumed to fit in memory)
+        # as a Tab-Separated-Values (*.tsv) file
+        df = pd.read_csv(uri, sep="\t")
+            
         # Remove missing values
-        data = data.dropna()
+        df = df.dropna()
         
         # Split dataset into train and test
-        train_data, test_data = train_test_split(data,
-                                                 test_size=test_size,
-                                                 random_state=random_state)
-        
-        return train_data, test_data
+        train_df, test_df = train_test_split(df,
+                                             test_size=test_size,
+                                             random_state=random_state)
+
+        return train_df, test_df
 
 
-    def prepare(self, data, training=False):
+    def preprocess(self, data: pd.DataFrame, training: bool = False):
         mode = "training" if training else "prediction"
-        logging.debug(f"Prepare data for {mode}")
+        logging.debug(f"Preprocess data for {mode}")
 
         if training:
             data = data.dropna()
@@ -80,7 +79,7 @@ class CustomerSegmentation:
         data["Customer_For"] = pd.to_numeric(data["Customer_For"], errors="coerce")
 
         # Age of customer as of today
-        data["Age"] = self.current_year - data["Year_Birth"]
+        data["Age"] = self.as_of_year - data["Year_Birth"]
 
         # Total spendings on various items
         data["Spent"] = data[
@@ -156,17 +155,17 @@ class CustomerSegmentation:
             data = data[data["Income"] < self.income_cap]
             
         if self.debug:
-            print(f"Prepared {mode} data:")
+            print(f"Preprocessed {mode} data:")
             print(data.info())
             print(data)
 
         return data
 
 
-    def train(self, data, n_clusters=4):
+    def train(self, data: pd.DataFrame, n_clusters: int = 4, random_state: int = 42) -> Pipeline:
         logging.debug(f"Train n_clusters={n_clusters}")
         
-        data = self.prepare(data, training=True)
+        data = self.preprocess(data, training=True)
 
         #numerical = data.select_dtypes(include=["int64", "float64"]).columns
         categorical = data.select_dtypes(include=["object", "bool"]).columns
@@ -183,7 +182,7 @@ class CustomerSegmentation:
         pipeline = Pipeline(steps=[
             ('tr', transformer),
             ('sts', StandardScaler()),
-            ('km', KMeans(n_clusters=n_clusters, random_state=self.random_state))
+            ('km', KMeans(n_clusters=n_clusters, random_state=random_state))
         ])
 
         pipeline.fit_transform(data)
@@ -195,22 +194,20 @@ class CustomerSegmentation:
             print("Trained data stats\n", data.describe().T)
 
         self.pipeline = pipeline
+        return pipeline
 
 
-    def save_model(self, model_path):
-        logging.debug(f"Save pipeline to model_path={model_path}")
-        joblib.dump(self.pipeline, model_path)
-
-
-    def load_model(self, model_path):
-        logging.debug(f"Load pipeline from model_path={model_path}")
-        self.pipeline = joblib.load(model_path)
-
-
-    def predict(self, data):
+    def predict(self, data: pd.DataFrame, preprocess=True):
         logging.debug(f"Predict")
         
-        data = self.prepare(data, training=False)
+        if preprocess:
+            data = self.preprocess(data, training=False)
+        
+        if self.debug:
+            print("Example of data for prediction:")
+            print(data.columns.values.tolist())
+            print(data.iloc[0].values.tolist())
+        
         predictions = self.pipeline.predict(data)
         
         if self.debug:
