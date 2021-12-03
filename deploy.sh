@@ -13,16 +13,16 @@ IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${I
 
 MODEL_NAME="customer-segmentation" #YOUR_CHANGE
 
-gcloud beta artifacts repositories create {REPO_NAME} \
- --repository-format=docker \
- --location="${REGION}"
+#gcloud beta artifacts repositories create {REPO_NAME} \
+# --repository-format=docker \
+# --location="${REGION}"
 
 docker push "${IMAGE_URI}"
 
-gcloud beta ai models upload \
-  --region="${REGION}" \
-  --display-name="${MODEL_NAME}" \
-  --container-image-uri="${IMAGE_URI}" \
-  --container-ports=5050 \
-  --container-health-route=/custsegm/v1 \
-  --container-predict-route=/custsegm/v1/predict
+#gcloud beta ai models upload \
+#  --region="${REGION}" \
+#  --display-name="${MODEL_NAME}" \
+#  --container-image-uri="${IMAGE_URI}" \
+#  --container-ports=5050 \
+#  --container-health-route=/custsegm/v1 \
+#  --container-predict-route=/custsegm/v1/predict
