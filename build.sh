@@ -21,7 +21,7 @@ docker build --tag="${IMAGE_URI}" .
 # Run container locally as a basic test
 echo "Running the container locally..."
 #docker run -d -p 5050:5050 --name=test-container "${IMAGE_URI}"
-# YOUR_CHANGE default locations of input training dataset (a file) and output model artifacts (a folder)
+# YOUR_CHANGE default locations of input training dataset file and output model artifacts directory
 docker run \
     -e AIP_TRAINING_DATA_URI="gs://${PROJECT_ID}-bucket/custom-training/custsegm/data/marketing_campaign.csv" \
     -e AIP_MODEL_DIR="gs://${PROJECT_ID}-bucket/custom-training/custsegm/model" \
