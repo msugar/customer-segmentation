@@ -12,7 +12,7 @@ from typing import List, Tuple
 from custsegm.custsegm import CustomerSegmentation
 
 import pandas as pd
-from google.cloud import storage
+from google.cloud.storage import Client as StorageClient, Blob
 from google.cloud.logging import Client as LogClient
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -22,54 +22,81 @@ class Trainer:
     def __init__(self,
                  project_id: str,
                  dataset_uri: str,
-                 model_uri: str,
+                 model_dir: str,
                  debug: bool = False):
-        
-        self.artifact_filename = 'model/custsegm_model.joblib'
+        self.dataset_filename = "dataset.tsv"
+        self.artifact_filename = "model.joblib"
         self.project_id = project_id
         self.dataset_uri = dataset_uri
-        self.model_uri = model_uri
+        self.model_dir = model_dir
         self.debug = debug
         logging.debug(f"Trainer" +
                       f" dataset_uri={dataset_uri}" +
-                      f" model_uri={model_uri}" +
+                      f" model_dir={model_dir}" +
                       f" debug={debug}.")
 
 
     def run(self) -> None: 
         logging.info("Custom training job started...")
         
-        logging.info(f"Reading dataset from {self.dataset_uri}")
-        train_data, test_data = CustomerSegmentation.\
-            read_train_test_data(self.dataset_uri, test_size=0.1)          
+        # Import the dataset
+        if self.dataset_uri:
+            if self.dataset_uri.startswith("gs://"):
+                self.download_dataset_from_gcs()
 
-        logging.info(f"Fitting model")
+        # Split dataset into training and test data
+        logging.info(f"Loading dataset")
+        train_data, test_data = CustomerSegmentation.\
+            read_train_test_data(self.dataset_filename, test_size=0.1)  
+
+        logging.info("Fitting model")
         trainee = CustomerSegmentation()
         pipeline = trainee.train(train_data)
         
         # Save model artifact to local filesystem (doesn't persist)
-        logging.info(f"Saving fitted model to local file {self.artifact_filename}")
+        logging.info(f"Saving fitted model")
         joblib.dump(pipeline, self.artifact_filename)
         
-        if self.model_uri:
-            if self.model_uri.startswith("gs://"):
-                self.export_model_to_gcs()
+        # Export the model
+        if self.model_dir:
+            if self.model_dir.startswith("gs://"):
+                self.upload_model_to_gcs()
+                
+        # Clean-up
+        if self.dataset_uri:
+            os.remove(self.dataset_filename)
+        if self.model_dir:
+            os.remove(self.artifact_filename)
         
-        logging.info("Done")
+        logging.info("Custom training job done")
 
 
-    def export_model_to_gcs(self) -> None:
-        """Exports trained pipeline to GCS
+    def download_dataset_from_gcs(self) -> None:
+        """Downloads dataset from GCS
         """
-        logging.info("Exporting model artifact to GCS...")
+        logging.info("Downloading dataset from GCS...")
+
+        # Download dataset from Cloud Storage
+        storage_path = self.dataset_uri
+        client = StorageClient()
+        blob = Blob.from_string(storage_path, client=client)
+        blob.download_to_filename(self.dataset_filename)
+
+        logging.info(f"Downloaded dataset from {storage_path}")
+
+
+    def upload_model_to_gcs(self) -> None:
+        """Uploads trained pipeline to GCS
+        """
+        logging.info("Uploading model artifact to GCS...")
         
         # Upload model artifact to Cloud Storage
-        storage_path = os.path.join(self.model_uri, self.artifact_filename)
-        client = storage.Client()
-        blob = storage.blob.Blob.from_string(storage_path, client=client)
+        storage_path = os.path.join(self.model_dir, self.artifact_filename)
+        client = StorageClient()
+        blob = Blob.from_string(storage_path, client=client)
         blob.upload_from_filename(self.artifact_filename)
         
-        logging.info(f"Exported model artifact to: {storage_path}")
+        logging.info(f"Uploaded model artifact to: {storage_path}")
 
 
 # Define all the command line arguments your model can accept for training
@@ -78,7 +105,7 @@ if __name__ == "__main__":
     # Command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--project_id",
+        "--cloud_logging_project_id",
         help="GCP project id for cloud logging.",
         type=str
     )
@@ -86,13 +113,13 @@ if __name__ == "__main__":
 
     # Explicit project selection:
     # See: https://cloud.google.com/vertex-ai/docs/training/code-requirements
-    project_id = args.project_id
-    if project_id is None:
-        project_id = os.getenv("CLOUD_ML_PROJECT_ID")
+    project_id = os.getenv("CLOUD_ML_PROJECT_ID")
 
-    if project_id:
+    # Configure logging
+    cloud_logging_project_id = args.cloud_logging_project_id or project_id
+    if cloud_logging_project_id:
         # Set up the GCP logger
-        client = LogClient(project=project_id)
+        client = LogClient(project=cloud_logging_project_id)
         client.setup_logging(log_level=logging.INFO)
     else:
         logging.getLogger().setLevel(logging.INFO)
@@ -114,8 +141,7 @@ if __name__ == "__main__":
     # by the traing service:
     AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
 
-    training_data_uri = AIP_TRAINING_DATA_URI or "data/marketing_campaign.tsv"
-    model_uri = AIP_MODEL_DIR
-        
-    trainer = Trainer(project_id, training_data_uri, model_uri)
+    dataset_uri = AIP_TRAINING_DATA_URI or "marketing_campaign.csv"
+    model_dir = AIP_MODEL_DIR
+    trainer = Trainer(project_id, dataset_uri, model_dir)
     trainer.run()
