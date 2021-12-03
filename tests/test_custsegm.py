@@ -4,14 +4,15 @@ import unittest
 import logging
 import os
 from custsegm.custsegm import CustomerSegmentation
+from custsegm.dataset import Dataset
 
 class CustomerSegmentationTestCase(unittest.TestCase):
     def setUp(self):
         logging.getLogger().setLevel(logging.INFO)
-        self.model_path = "tests/custsegm_model.joblib"
-        dataset_uri = "data/marketing_campaign.tsv"
-        self.train_data, self.test_data = CustomerSegmentation.\
-            read_train_test_data(dataset_uri, test_size=0.10)
+        self.model_path = "test_model.joblib"
+        dataset_uri = "gs://term-project-331703-bucket/custom-training/custsegm/data/marketing_campaign.csv"
+        self.train_data, self.test_data = Dataset.read_train_test(dataset_uri)
+        super().setUp()
 
 
     def tearDown(self):

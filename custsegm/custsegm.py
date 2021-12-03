@@ -18,12 +18,12 @@ from sklearn.compose import ColumnTransformer
 from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin, BaseEstimator
-from sklearn.model_selection import train_test_split
-import sys
-import warnings
 
-if not sys.warnoptions:
-    warnings.simplefilter("ignore")
+#import sys
+#import warnings
+
+#if not sys.warnoptions:
+#    warnings.simplefilter("ignore")
 
 
 class CustomerSegmentation:
@@ -44,23 +44,6 @@ class CustomerSegmentation:
                       f" age_cap={age_cap}" +
                       f" income_cap={income_cap}" +
                       f" debug={debug}.")
-
-
-    @staticmethod
-    def read_train_test_data(uri: str, test_size: float, random_state: int = 42) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        # Read training dataset (assumed to fit in memory)
-        # as a Tab-Separated-Values (*.tsv) file
-        df = pd.read_csv(uri, sep="\t")
-            
-        # Remove missing values
-        df = df.dropna()
-        
-        # Split dataset into train and test
-        train_df, test_df = train_test_split(df,
-                                             test_size=test_size,
-                                             random_state=random_state)
-
-        return train_df, test_df
 
 
     def preprocess(self, data: pd.DataFrame, training: bool = False):

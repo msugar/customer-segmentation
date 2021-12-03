@@ -10,6 +10,7 @@ import joblib
 from typing import List, Tuple
 
 from custsegm.custsegm import CustomerSegmentation
+from custsegm.dataset import Dataset
 
 import pandas as pd
 from google.cloud.storage import Client as StorageClient, Blob
@@ -22,18 +23,16 @@ class Trainer:
     def __init__(self,
                  project_id: str,
                  dataset_uri: str,
-                 model_dir: str,
-                 debug: bool = False):
+                 model_dir: str):
         self.dataset_filename = "dataset.tsv"
         self.artifact_filename = "model.joblib"
         self.project_id = project_id
         self.dataset_uri = dataset_uri
         self.model_dir = model_dir
-        self.debug = debug
         logging.debug(f"Trainer" +
+                      f" project_id={project_id}" +
                       f" dataset_uri={dataset_uri}" +
-                      f" model_dir={model_dir}" +
-                      f" debug={debug}.")
+                      f" model_dir={model_dir}.")
 
 
     def run(self) -> None: 
@@ -46,8 +45,7 @@ class Trainer:
 
         # Split dataset into training and test data
         logging.info(f"Loading dataset")
-        train_data, test_data = CustomerSegmentation.\
-            read_train_test_data(self.dataset_filename, test_size=0.1)  
+        train_data, test_data = Dataset.read_train_test(self.dataset_filename)
 
         logging.info("Fitting model")
         trainee = CustomerSegmentation()
@@ -61,13 +59,13 @@ class Trainer:
         if self.model_dir:
             if self.model_dir.startswith("gs://"):
                 self.upload_model_to_gcs()
-                
+
         # Clean-up
         if self.dataset_uri:
             os.remove(self.dataset_filename)
         if self.model_dir:
             os.remove(self.artifact_filename)
-        
+
         logging.info("Custom training job done")
 
 
@@ -136,12 +134,16 @@ if __name__ == "__main__":
     AIP_TRAINING_DATA_URI = os.getenv('AIP_TRAINING_DATA_URI') # uri to training split
     AIP_VALIDATION_DATA_URI = os.getenv('AIP_VALIDATION_DATA_URI') # uri to validation split
     AIP_TEST_DATA_URI = os.getenv('AIP_TEST_DATA_URI') # uri to test split
-        
+    
     # It must write the model artifact to the environment variable populated
     # by the traing service:
     AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
 
     dataset_uri = AIP_TRAINING_DATA_URI or "marketing_campaign.csv"
     model_dir = AIP_MODEL_DIR
+
+    logging.info(f"dataset_uri={dataset_uri}")
+    logging.info(f"model_dir={model_dir}")
+
     trainer = Trainer(project_id, dataset_uri, model_dir)
     trainer.run()
