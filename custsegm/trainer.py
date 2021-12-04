@@ -7,6 +7,7 @@ import argparse
 import logging
 import os
 import joblib
+from datetime import datetime
 from typing import List, Tuple
 
 from custsegm.custsegm import CustomerSegmentation
@@ -24,8 +25,6 @@ class Trainer:
                  project_id: str,
                  dataset_uri: str,
                  model_dir: str):
-        self.dataset_filename = "dataset.tsv"
-        self.artifact_filename = "model.joblib"
         self.project_id = project_id
         self.dataset_uri = dataset_uri
         self.model_dir = model_dir
@@ -33,6 +32,13 @@ class Trainer:
                       f" project_id={project_id}" +
                       f" dataset_uri={dataset_uri}" +
                       f" model_dir={model_dir}.")
+        # If you are in a live tutorial session, you might be using a shared
+        # test account or project. To avoid name collisions between users on
+        # resources created, you create a timestamp for each instance 
+        # session, and append it onto the name of local resources you create
+        TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.dataset_filename = f"dataset-{TIMESTAMP}.tsv"
+        self.artifact_filename = f"model-{TIMESTAMP}.joblib"
 
 
     def run(self) -> None: 
@@ -44,15 +50,15 @@ class Trainer:
                 self.download_dataset_from_gcs()
 
         # Split dataset into training and test data
-        logging.info(f"Loading dataset")
+        logging.debug(f"Loading dataset from local file {self.dataset_filename}")
         train_data, test_data = Dataset.read_train_test(self.dataset_filename)
 
-        logging.info("Fitting model")
+        logging.debug("Fitting model")
         trainee = CustomerSegmentation()
         pipeline = trainee.train(train_data)
         
         # Save model artifact to local filesystem (doesn't persist)
-        logging.info(f"Saving fitted model")
+        logging.debug(f"Saving fitted model to local file {self.artifact_filename}")
         joblib.dump(pipeline, self.artifact_filename)
         
         # Export the model
@@ -72,29 +78,23 @@ class Trainer:
     def download_dataset_from_gcs(self) -> None:
         """Downloads dataset from GCS
         """
-        logging.info("Downloading dataset from GCS...")
-
         # Download dataset from Cloud Storage
         storage_path = self.dataset_uri
+        logging.debug(f"Downloading dataset from GCS bucket {storage_path} to local file {self.dataset_filename}")
         client = StorageClient()
         blob = Blob.from_string(storage_path, client=client)
         blob.download_to_filename(self.dataset_filename)
-
-        logging.info(f"Downloaded dataset from {storage_path}")
 
 
     def upload_model_to_gcs(self) -> None:
         """Uploads trained pipeline to GCS
         """
-        logging.info("Uploading model artifact to GCS...")
-        
         # Upload model artifact to Cloud Storage
-        storage_path = os.path.join(self.model_dir, self.artifact_filename)
+        storage_path = os.path.join(self.model_dir, "model.joblib") # file name required by Vertex AI
+        logging.debug(f"Uploading model artifact from local file {self.artifact_filename} to GCS bucket {storage_path}")
         client = StorageClient()
         blob = Blob.from_string(storage_path, client=client)
         blob.upload_from_filename(self.artifact_filename)
-        
-        logging.info(f"Uploaded model artifact to: {storage_path}")
 
 
 # Define all the command line arguments your model can accept for training
@@ -132,18 +132,19 @@ if __name__ == "__main__":
     # See: https://cloud.google.com/vertex-ai/docs/training/using-managed-datasets
     AIP_DATA_FORMAT = os.getenv('AIP_DATA_FORMAT') # provides format of data: csv, jsonl, or bigquery
     AIP_TRAINING_DATA_URI = os.getenv('AIP_TRAINING_DATA_URI') # uri to training split
+    if not AIP_TRAINING_DATA_URI:
+        raise ValueError("AIP_TRAINING_DATA_URI env var must be set")
     AIP_VALIDATION_DATA_URI = os.getenv('AIP_VALIDATION_DATA_URI') # uri to validation split
     AIP_TEST_DATA_URI = os.getenv('AIP_TEST_DATA_URI') # uri to test split
-    
+
     # It must write the model artifact to the environment variable populated
     # by the traing service:
     AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
+    if not AIP_MODEL_DIR:
+        raise ValueError("AIP_MODEL_DIR env var mus be set")
 
-    dataset_uri = AIP_TRAINING_DATA_URI or "marketing_campaign.csv"
-    model_dir = AIP_MODEL_DIR
+    logging.debug(f"AIP_TRAINING_DATA_URI={AIP_TRAINING_DATA_URI}")
+    logging.debug(f"AIP_MODEL_DIR={AIP_MODEL_DIR}")
 
-    logging.info(f"dataset_uri={dataset_uri}")
-    logging.info(f"model_dir={model_dir}")
-
-    trainer = Trainer(project_id, dataset_uri, model_dir)
+    trainer = Trainer(project_id, AIP_TRAINING_DATA_URI, AIP_MODEL_DIR)
     trainer.run()
