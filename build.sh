@@ -16,10 +16,10 @@ IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${I
 
 # Build docker image
 echo "Building docker image: ${IMAGE_URI}"
-docker build --tag="${IMAGE_URI}" .
+docker build ./ --tag="${IMAGE_URI}" .
 
 # Run container locally as a basic test
-echo "Running the container locally..."
+echo "Smoke test: Run the container locally to ensure it's working correctly"
 #docker run -d -p 5050:5050 --name=test-container "${IMAGE_URI}"
 # YOUR_CHANGE default locations of input training dataset file and output model artifacts directory
 docker run \

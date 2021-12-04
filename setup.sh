@@ -7,6 +7,11 @@ then
     exit 1
 fi
 
+# Set environment variables
+PROJECT_ID=$(gcloud config get-value project)
+export AIP_TRAINING_DATA_URI="gs://${PROJECT_ID}-bucket/custom-training/custsegm/data/marketing_campaign.csv"
+export AIP_MODEL_DIR="gs://${PROJECT_ID}-bucket/custom-training/custsegm/model"
+
 # Setup virtual enviroment
 if [ ! -d "./venv" ] 
 then
@@ -18,4 +23,5 @@ else
     echo 'Activating virtual environment (venv)' 
     source ./venv/bin/activate
 fi
+
 
