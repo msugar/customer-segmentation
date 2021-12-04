@@ -19,6 +19,6 @@ print('pandas=={}'.format(pandas.__version__))
 import sklearn
 print('scikit-learn=={}'.format(sklearn.__version__))
 
-import tensorflow as tf
-print('tensorflow=={}'.format(tf.__version__))
+#import tensorflow as tf
+#print('tensorflow=={}'.format(tf.__version__))
 
