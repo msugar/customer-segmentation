@@ -15,17 +15,22 @@ from google.cloud.logging import Client as LogClient
 
 class Predictor:
     def __init__(self,
-                 model_dir: str):
+                 model_dir: str,
+                 artifact_filename: str):
         self.model_dir = model_dir
-        logging.debug(f"Predictor" +
-                      f" model_dir={self.model_dir}.")
         # If you are in a live tutorial session, you might be using a shared
         # test account or project. To avoid name collisions between users on
         # resources created, you create a timestamp for each instance 
         # session, and append it onto the name of local resources you create
         #TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
         #self.artifact_filename = f"model-{TIMESTAMP}.joblib"
-        self.artifact_filename = "model-used-by-predictor.joblib"
+        if artifact_filename:
+            self.artifact_filename = artifact_filename
+        else:
+            self.artifact_filename = "model-used-by-predictor.joblib"
+        logging.debug(f"Predictor" +
+                      f" model_dir={self.model_dir}" +
+                      f" artifact_filename={self.artifact_filename}.")
 
 
     def ready(self):

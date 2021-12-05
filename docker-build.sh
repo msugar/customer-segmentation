@@ -9,10 +9,10 @@ ME=`basename "$0"`
 usage()
 {
 cat << EOF
-Build a docker image for the trainer or predictor container.
+Build a docker image for the predictor, trainer, or cloudrun containers.
 Usage: $ME [-h] TARGET
 Parameters:
-    TARGET    Build target: predictor or trainer.
+    TARGET    Build target: predictor, trainer, or cloudrun.
 Options:
     -h        Show this help.
 EOF
@@ -48,7 +48,7 @@ while [ $# -ne 0 ]
 do
     arg="$1"
     case "$arg" in
-        predictor|trainer)
+        predictor|trainer|cloudrun)
             TARGET="$arg"
             ;;
         \?)
@@ -75,7 +75,7 @@ IMAGE_TAG=1.0 # YOUR_CHANGE a tag of your choice for this version of your contai
 IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 # Build docker image
-echo "Building ${TARGET} docker image: ${IMAGE_URI}"
+echo "Building ${TARGET} docker image locally: ${IMAGE_URI}"
 docker build --file="Dockerfile.${TARGET}" --tag="${IMAGE_URI}" .
 
 echo "Done"

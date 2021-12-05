@@ -12,7 +12,7 @@ cat << EOF
 Runs a trainer or predictor docker container locally for testing.
 Usage: $ME [-h] TARGET
 Parameters:
-    TARGET    Target image: predictor or trainer.
+    TARGET    Target image: predictor, trainer, or cloudrun.
 Options:
     -h        Show this help.
 EOF
@@ -48,7 +48,7 @@ while [ $# -ne 0 ]
 do
     arg="$1"
     case "$arg" in
-        predictor|trainer)
+        predictor|trainer|cloudrun)
             TARGET="$arg"
             ;;
         \?)
@@ -81,10 +81,12 @@ AIP_TRAINING_DATA_URI="gs://${PROJECT_ID}-bucket/custom-training/custsegm/data/m
 # YOUR_CHANGE use your own conventions for the default location of the output model artifacts directory
 AIP_MODEL_DIR="gs://${PROJECT_ID}-bucket/custom-training/custsegm/model"
 
-echo "Smoke test: Running the ${TARGET} container locally to ensure it's working correctly."
 case "$TARGET" in
     trainer)
-        echo "Running trainer in interactive mode"
+        echo "Running ${TARGET} container locally in interactive mode to ensure it's working correctly."
+        echo ""
+        echo "IMAGE_URI=${IMAGE_URI}"
+        echo ""
         docker run -it \
             -e AIP_TRAINING_DATA_URI="${AIP_TRAINING_DATA_URI}" \
             -e AIP_MODEL_DIR="${AIP_MODEL_DIR}" \
@@ -93,11 +95,13 @@ case "$TARGET" in
         docker rm "/custsegm_trainer"
         ;;
     predictor)
-        echo "Running predictor container in detached mode"
-        echo
+        echo "Running ${TARGET} container locally in interactive mode to ensure it's working correctly."
+        echo ""
         echo "Try these commands in another termainal to test the web server:"
         echo "curl http://0.0.0.0:5050/healthz"
         echo 'curl -X POST -H "Content-Type: application/json" http://0.0.0.0:5050/predict -d "@input.json"'
+        echo ""
+        echo "IMAGE_URI=${IMAGE_URI}"
         echo ""
         docker run -it \
             -e AIP_MODEL_DIR="${AIP_MODEL_DIR}" \
@@ -105,6 +109,21 @@ case "$TARGET" in
             --name=custsegm_predictor \
             "${IMAGE_URI}"
         docker rm "/custsegm_predictor"
+        ;;
+    cloudrun)
+        echo "Running ${TARGET} container locally in interactive mode to ensure it's working correctly."
+        echo ""
+        echo "Try these commands in another termainal to test the web server:"
+        echo "curl http://0.0.0.0:5050"
+        echo 'curl -X POST -H "Content-Type: application/json" http://0.0.0.0:5050 -d "@input.json"'
+        echo ""
+        echo "IMAGE_URI=${IMAGE_URI}"
+        echo ""
+        docker run -it \
+            -e PORT=5050 \
+            -p 5050:5050 \
+            --name=custsegm_cloudrun \
+            "${IMAGE_URI}"
+        docker rm "/custsegm_cloudrun"
 esac
-echo "IMAGE_URI=${IMAGE_URI}"
 echo "Done."

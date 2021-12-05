@@ -9,7 +9,7 @@ export AIP_MODEL_DIR="gs://${PROJECT_ID}-bucket/custom-training/custsegm/model"
 
 echo "Running predictor web service"
 echo
-echo "Try these commands in another termainal to test the web server:"
+echo "Try these commands in another terminal to test the web server:"
 echo "curl http://0.0.0.0:5050/healthz"
 echo 'curl -X POST -H "Content-Type: application/json" http://0.0.0.0:5050/predict -d "@input.json"'
 echo ""

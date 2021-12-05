@@ -9,10 +9,10 @@ ME=`basename "$0"`
 usage()
 {
 cat << EOF
-Build a docker image for the trainer or predictor container.
+Deploy the docker image for the predictor, trainer, or cloudrun containers.
 Usage: $ME [-h] TARGET
 Parameters:
-    TARGET    Build target: predictor or trainer.
+    TARGET    Deploy target: predictor, trainer, or cloudrun.
 Options:
     -h        Show this help.
 EOF
@@ -48,7 +48,7 @@ while [ $# -ne 0 ]
 do
     arg="$1"
     case "$arg" in
-        predictor|trainer)
+        predictor|trainer|cloudrun)
             TARGET="$arg"
             ;;
         \?)
@@ -60,7 +60,7 @@ do
 done
 
 if [ -z "$TARGET" ]; then
-        echo 'You must inform a valid build TARGET: predictor or trainer.' >&2
+        echo 'You must inform a valid build TARGET: cloudrun, predictor, or trainer.' >&2
         exit 2
 fi
 
@@ -81,16 +81,15 @@ ENDPOINT_NAME="customer-segmentation-endpoint" #YOUR_CHANGE
 # --repository-format=docker \
 # --location="${REGION}"
 
-echo "Push ${TARGET} docker image to the Artifact Repository on Google Cloud:"
-echo "${IMAGE_URI}"
-docker push "${IMAGE_URI}"
-
 case "$TARGET" in
-    trainer)
+    trainer|predictor)
+        echo "Push ${TARGET} docker image to the Artifact Repository on Google Cloud:"
         echo "---"
+        docker push "${IMAGE_URI}"
+        echo "---"
+        echo "Pushed ${IMAGE_URI}"
         ;;
     predictor)
-        echo "---"
         exit
         
         echo 'See if model already exists on Vertex AI:'
@@ -130,8 +129,24 @@ case "$TARGET" in
           --min-replica-count=1 \
           --max-replica-count=2 \
           --traffic-split=0=100
+        ;;
+    cloudrun)
+        # Submit docker image to Google Cloud Build
+        cp Dockerfile.cloudrun Dockerfile
+        echo "Submit image to Google Cloud Build:"
+        #gcloud builds submit --tag "${IMAGE_URI}"
+        rm Dockerfile
+        
+        # Submit docker container on Google Cloud Run
+        echo "Deploy app with model on Google Cloud Run"
+        echo "---"
+        #gcloud run deploy --image "${IMAGE_URI}" --platform managed --region=$REGION 
+        echo "---"
+        CLOUDRUN_URL=$(gcloud run services describe custsegm-${TARGET} --platform managed --region ${REGION} --format 'value(status.url)')
+        echo "Service ${CLOUDRUN_URL} <-- ${IMAGE_URI} running on Google Clour Run"
+        echo ""
+        echo "As an authenticated user, try these commands to test the web server:"
+        echo "curl ${CLOUDRUN_URL}"
+        echo "curl -X POST -H \"Content-Type: application/json\" ${CLOUDRUN_URL} -d \"@input.json\""
 esac
-
-echo "---"
 echo "Done."
-  
