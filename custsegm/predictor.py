@@ -15,12 +15,9 @@ from google.cloud.logging import Client as LogClient
 
 class Predictor:
     def __init__(self,
-                 project_id: str,
                  model_dir: str):
-        self.project_id = project_id
         self.model_dir = model_dir
         logging.debug(f"Predictor" +
-                      f" project_id={self.project_id}" +
                       f" model_dir={self.model_dir}.")
         # If you are in a live tutorial session, you might be using a shared
         # test account or project. To avoid name collisions between users on
@@ -78,15 +75,10 @@ class Predictor:
     
     @staticmethod
     def as_set_by_envvars():
-        CLOUD_ML_PROJECT_ID = os.getenv("CLOUD_ML_PROJECT_ID")
-        if not CLOUD_ML_PROJECT_ID:
-            raise ValueError("CLOUD_ML_PROJECT_ID not set.")
-        logging.info(f"CLOUD_ML_PROJECT_ID={CLOUD_ML_PROJECT_ID}")
-
         AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
         if not AIP_MODEL_DIR:
             raise ValueError("AIP_MODEL_DIR not set.")
         logging.debug(f"AIP_MODEL_DIR={AIP_MODEL_DIR}")
         
-        predictor = Predictor(CLOUD_ML_PROJECT_ID, AIP_MODEL_DIR)
+        predictor = Predictor(AIP_MODEL_DIR)
         return predictor

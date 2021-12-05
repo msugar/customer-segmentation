@@ -90,6 +90,9 @@ case "$TARGET" in
         echo "---"
         ;;
     predictor)
+        echo "---"
+        exit
+        
         echo 'See if model already exists on Vertex AI:'
         gcloud beta ai models list \
           --region=$REGION \
@@ -127,9 +130,8 @@ case "$TARGET" in
           --min-replica-count=1 \
           --max-replica-count=2 \
           --traffic-split=0=100
-        
-        echo "---"
 esac
 
+echo "---"
 echo "Done."
   

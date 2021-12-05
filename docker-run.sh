@@ -75,7 +75,7 @@ IMAGE_TAG=1.0 # YOUR_CHANGE a tag of your choice for this version of your contai
 IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 # Environment variables to pass to the container
-CLOUD_ML_PROJECT_ID="${PROJECT_ID}"
+#CLOUD_ML_PROJECT_ID="${PROJECT_ID}"
 # YOUR_CHANGE use your own conventions for the default location of the input training dataset
 AIP_TRAINING_DATA_URI="gs://${PROJECT_ID}-bucket/custom-training/custsegm/data/marketing_campaign.csv" 
 # YOUR_CHANGE use your own conventions for the default location of the output model artifacts directory
@@ -88,18 +88,23 @@ case "$TARGET" in
         docker run -it \
             -e AIP_TRAINING_DATA_URI="${AIP_TRAINING_DATA_URI}" \
             -e AIP_MODEL_DIR="${AIP_MODEL_DIR}" \
+            --name=custsegm_trainer \
             "${IMAGE_URI}"
+        docker rm "/custsegm_trainer"
         ;;
     predictor)
-        echo "Running predictor in detached mode"
+        echo "Running predictor container in detached mode"
         echo
         echo "Try these commands in another termainal to test the web server:"
         echo "curl http://0.0.0.0:5050/healthz"
         echo 'curl -X POST -H "Content-Type: application/json" http://0.0.0.0:5050/predict -d "@input.json"'
-        echo
+        echo ""
         docker run -it \
-            -e CLOUD_ML_PROJECT_ID="${CLOUD_ML_PROJECT_ID}" \
             -e AIP_MODEL_DIR="${AIP_MODEL_DIR}" \
             -p 5050:5050 \
+            --name=custsegm_predictor \
             "${IMAGE_URI}"
+        docker rm "/custsegm_predictor"
 esac
+echo "IMAGE_URI=${IMAGE_URI}"
+echo "Done."

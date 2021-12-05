@@ -137,7 +137,7 @@ class CustomerSegmentationTestCase(unittest.TestCase):
         
         
     def test_predictor_predict_for_vertex_ai(self):
-        pred = Predictor("term-project-331703", "gs://term-project-331703-bucket/custom-training/custsegm/model")
+        pred = Predictor("gs://term-project-331703-bucket/custom-training/custsegm/model")
         pred.ready()
         
         vertex_ai_input = json.loads(self.json_str)
@@ -154,7 +154,7 @@ class CustomerSegmentationTestCase(unittest.TestCase):
         
         
     def test_predictor_predict_for_vertex_ai2(self):
-        pred = Predictor("term-project-331703", "gs://term-project-331703-bucket/custom-training/custsegm/model")
+        pred = Predictor("gs://term-project-331703-bucket/custom-training/custsegm/model")
         pred.ready()
         
         vertex_ai_input = json.loads(self.json_str)["instances"]
