@@ -1,0 +1,10 @@
+FROM python:3.7
+
+WORKDIR /work
+
+COPY . /work
+
+COPY ./requirements.txt /work/requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt 
+
+ENTRYPOINT ["python", "-m", "custsegm.trainer"]

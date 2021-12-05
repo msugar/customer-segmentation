@@ -7,6 +7,7 @@ import logging
 import os
 from typing import List, Tuple
 from datetime import date
+import json
 import numpy as np
 import pandas as pd
 
@@ -20,10 +21,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin, BaseEstimator
 
 #import sys
-#import warnings
+import warnings
 
 #if not sys.warnoptions:
 #    warnings.simplefilter("ignore")
+
+from pandas.core.common import SettingWithCopyWarning
 
 
 class CustomerSegmentation:
@@ -55,6 +58,7 @@ class CustomerSegmentation:
 
         # Create a feature out of "Dt_Customer" that indicates the number of
         # days a customer is registered in the firm's database
+        warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
         data["Dt_Customer"] = pd.to_datetime(data["Dt_Customer"])
         max_date = data["Dt_Customer"].max()
         data["Customer_For"] = max_date
@@ -137,10 +141,10 @@ class CustomerSegmentation:
             data = data[data["Age"] < self.age_cap]
             data = data[data["Income"] < self.income_cap]
             
-        if self.debug:
-            print(f"Preprocessed {mode} data:")
-            print(data.info())
-            print(data)
+        #if self.debug:
+        #    print(f"Preprocessed {mode} data:")
+        #    print(data.info())
+        #    print(data)
 
         return data
 
@@ -172,9 +176,9 @@ class CustomerSegmentation:
 
         data["Clusters"] = pipeline["km"].labels_
 
-        if self.debug:
-            print("Trained data\n", data)
-            print("Trained data stats\n", data.describe().T)
+        #if self.debug:
+        #    print("Trained data\n", data)
+        #    print("Trained data stats\n", data.describe().T)
 
         self.pipeline = pipeline
         return pipeline
@@ -187,13 +191,15 @@ class CustomerSegmentation:
             data = self.preprocess(data, training=False)
         
         if self.debug:
-            print("Example of data for prediction:")
-            print(data.columns.values.tolist())
-            print(data.iloc[0].values.tolist())
+            print("Prediction input:")
+            #json_string = data.head(1).reset_index().to_json(orient='records')
+            #print(json_string)
+            print(data)
         
         predictions = self.pipeline.predict(data)
         
         if self.debug:
-            print("Predictions\n", predictions)
+            print("Prediction output:")
+            print(predictions)
             
         return predictions

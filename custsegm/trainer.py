@@ -57,7 +57,7 @@ class Trainer:
         trainee = CustomerSegmentation()
         pipeline = trainee.train(train_data)
         
-        # Save model artifact to local filesystem (doesn't persist)
+        # Save model artifact to local filesystem
         logging.debug(f"Saving fitted model to local file {self.artifact_filename}")
         joblib.dump(pipeline, self.artifact_filename)
         
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     AIP_DATA_FORMAT = os.getenv('AIP_DATA_FORMAT') # provides format of data: csv, jsonl, or bigquery
     AIP_TRAINING_DATA_URI = os.getenv('AIP_TRAINING_DATA_URI') # uri to training split
     if not AIP_TRAINING_DATA_URI:
-        raise ValueError("AIP_TRAINING_DATA_URI env var must be set")
+        raise ValueError("AIP_TRAINING_DATA_URI not set.")
     AIP_VALIDATION_DATA_URI = os.getenv('AIP_VALIDATION_DATA_URI') # uri to validation split
     AIP_TEST_DATA_URI = os.getenv('AIP_TEST_DATA_URI') # uri to test split
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # by the traing service:
     AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
     if not AIP_MODEL_DIR:
-        raise ValueError("AIP_MODEL_DIR env var mus be set")
+        raise ValueError("AIP_MODEL_DIR not set.")
 
     logging.debug(f"AIP_TRAINING_DATA_URI={AIP_TRAINING_DATA_URI}")
     logging.debug(f"AIP_MODEL_DIR={AIP_MODEL_DIR}")

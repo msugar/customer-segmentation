@@ -17,11 +17,11 @@ if [ ! -d "./venv" ]
 then
     echo 'Setting up virtual environment (venv)' 
     python -m venv venv
-    source ./venv/bin/activate
-    pip install -r requirements.txt
-else
-    echo 'Activating virtual environment (venv)' 
-    source ./venv/bin/activate
 fi
+echo 'Activating virtual environment (venv)' 
+source ./venv/bin/activate
+echo '(Re)installing dependencies' 
+pip install -r requirements.txt
+
 
 
