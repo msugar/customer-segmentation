@@ -134,13 +134,13 @@ case "$TARGET" in
         # Submit docker image to Google Cloud Build
         cp Dockerfile.cloudrun Dockerfile
         echo "Submit image to Google Cloud Build:"
-        #gcloud builds submit --tag "${IMAGE_URI}"
+        gcloud builds submit --tag "${IMAGE_URI}"
         rm Dockerfile
         
         # Submit docker container on Google Cloud Run
         echo "Deploy app with model on Google Cloud Run"
         echo "---"
-        #gcloud run deploy --image "${IMAGE_URI}" --platform managed --region=$REGION 
+        gcloud run deploy --image "${IMAGE_URI}" --platform managed --region=$REGION 
         echo "---"
         CLOUDRUN_URL=$(gcloud run services describe custsegm-${TARGET} --platform managed --region ${REGION} --format 'value(status.url)')
         echo "Service ${CLOUDRUN_URL} <-- ${IMAGE_URI} running on Google Clour Run"
