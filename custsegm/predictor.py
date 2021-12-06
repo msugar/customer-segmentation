@@ -56,8 +56,8 @@ class Predictor:
         client = StorageClient()
         blob = Blob.from_string(storage_path, client=client)
         blob.download_to_filename(self.artifact_filename)
-        
-        
+
+
     def predict_from_dataframe(self, df: pd.DataFrame):
         logging.debug(f"Predictor df << {df}")
         predictions = self.pipeline.predict(df)
@@ -80,10 +80,18 @@ class Predictor:
     
     @staticmethod
     def as_set_by_envvars():
-        AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
-        if not AIP_MODEL_DIR:
-            raise ValueError("AIP_MODEL_DIR not set.")
-        logging.debug(f"AIP_MODEL_DIR={AIP_MODEL_DIR}")
+        if os.path.isfile("model.joblib"):
+            logging.debug("Found local model.joblib file.")
+            model_dir = "."
+            artifact_filename = "model.joblib"
+        else:
+            AIP_MODEL_DIR = os.getenv('AIP_MODEL_DIR')
+            if AIP_MODEL_DIR:
+                logging.debug(f"AIP_MODEL_DIR={AIP_MODEL_DIR}")
+                model_dir = AIP_MODEL_DIR
+                artifact_filename = None
+            else:
+                raise ValueError("AIP_MODEL_DIR not set.")
         
-        predictor = Predictor(AIP_MODEL_DIR)
+        predictor = Predictor(model_dir, artifact_filename)
         return predictor

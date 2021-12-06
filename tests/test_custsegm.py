@@ -11,13 +11,13 @@ from custsegm.predictor import Predictor
 
 
 class CustomerSegmentationTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         logging.getLogger().setLevel(logging.INFO)
-        self.model_path = "test_model.joblib"
-        dataset_uri = "gs://term-project-331703-bucket/custom-training/custsegm/data/marketing_campaign.csv"
-        self.train_data, self.test_data = Dataset.read_train_test(dataset_uri)
+        cls.model_path = "test_model.joblib"
+        cls.train_data, cls.test_data = Dataset.read_train_test_from_default_gcs_bucket()
         
-        self.json_str = """
+        cls.test_json_request = """
             {
               "instances": [
                   {
@@ -74,28 +74,27 @@ class CustomerSegmentationTestCase(unittest.TestCase):
               "parameters": []
             }
             """
-        
-        super().setUp()
 
 
-    def tearDown(self):
-        if os.path.exists(self.model_path):
-            os.remove(self.model_path)
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(cls.model_path):
+            os.remove(cls.model_path)
 
 
     def test_train_predict(self):
         sut = CustomerSegmentation(as_of_year=2021)
-        sut.train(self.train_data)
-        predictions = sut.predict(self.test_data)
+        sut.train(CustomerSegmentationTestCase.train_data)
+        predictions = sut.predict(CustomerSegmentationTestCase.test_data)
         self.assertEqual(predictions.size, 222)
 
 
     def test_reusing_model(self):
         sut_1 = CustomerSegmentation(as_of_year=2021)
-        pipeline = sut_1.train(self.train_data)
+        pipeline = sut_1.train(CustomerSegmentationTestCase.train_data)
         
         sut_2 = CustomerSegmentation(pipeline, as_of_year=2021)
-        predictions = sut_2.predict(self.test_data)
+        predictions = sut_2.predict(CustomerSegmentationTestCase.test_data)
         expected = [3, 0, 2, 3, 0, 1, 3, 3, 2, 1, 2, 0, 2, 3, 2, 1, 0, 1, 2,
                     1, 3, 3, 2, 0, 3, 3, 1, 0, 1, 1, 0, 1, 0, 0, 0, 2, 1, 2,
                     1, 1, 1, 0, 1, 3, 3, 2, 3, 0, 0, 0, 3, 2, 0, 3, 3, 1, 1,
@@ -113,20 +112,20 @@ class CustomerSegmentationTestCase(unittest.TestCase):
         
     def test_prediction_input(self):
         sut = CustomerSegmentation(as_of_year=2021)
-        sut.train(self.train_data)
-        input = self.test_data.head(1)
+        sut.train(CustomerSegmentationTestCase.train_data)
+        input = CustomerSegmentationTestCase.test_data.head(1)
         #print("Data Input:", input)
         predictions = sut.predict(input)
         #print("Data Predictions:", predictions)
 
         
     def test_prediction_from_cc_vertex_ai_json(self):
-        a_json = json.loads(self.json_str)
+        a_json = json.loads(CustomerSegmentationTestCase.test_json_request)
         b_json = a_json['instances']
         input = pd.DataFrame(b_json)
         
         sut = CustomerSegmentation(as_of_year=2021)
-        sut.train(self.train_data)
+        sut.train(CustomerSegmentationTestCase.train_data)
         
         #print("JSON Input:", input)
         predictions = sut.predict(input, preprocess=False)
@@ -136,16 +135,11 @@ class CustomerSegmentationTestCase(unittest.TestCase):
         self.assertListEqual(predictions.tolist(), expected)
         
         
-    def test_predictor_predict_for_vertex_ai(self):
-        pred = Predictor("gs://term-project-331703-bucket/custom-training/custsegm/model")
+    def test_predictor_predict_with_vertex_ai_payload(self):
+        pred = Predictor.as_set_by_envvars()
         pred.ready()
         
-        vertex_ai_input = json.loads(self.json_str)
-        #input = vertex_ai_input["instances"]
-        #df0 = pd.DataFrame(input)
-        #print("df0", df0)
-
-        #predictions = pred.predict_from_dataframe(df0)
+        vertex_ai_input = json.loads(CustomerSegmentationTestCase.test_json_request)
         vertex_ai_output = pred.predict_from_vertex_ai(vertex_ai_input)
         predictions = vertex_ai_output["predictions"]
         
@@ -153,16 +147,11 @@ class CustomerSegmentationTestCase(unittest.TestCase):
         self.assertListEqual(predictions, expected)
         
         
-    def test_predictor_predict_for_vertex_ai2(self):
-        pred = Predictor("gs://term-project-331703-bucket/custom-training/custsegm/model")
+    def test_predictor_predict_with_instances(self):
+        pred = Predictor.as_set_by_envvars()
         pred.ready()
         
-        vertex_ai_input = json.loads(self.json_str)["instances"]
-        #input = vertex_ai_input["instances"]
-        #df0 = pd.DataFrame(input)
-        #print("df0", df0)
-
-        #predictions = pred.predict_from_dataframe(df0)
+        vertex_ai_input = json.loads(CustomerSegmentationTestCase.test_json_request)["instances"]
         vertex_ai_output = pred.predict_from_vertex_ai(vertex_ai_input)
         predictions = vertex_ai_output["predictions"]
         

@@ -9,8 +9,7 @@ from custsegm.predictor import Predictor
 
 app = Flask(__name__)
 
-#predictor = Predictor.as_set_by_envvars()
-predictor = Predictor(".", "model.joblib")
+predictor = Predictor.as_set_by_envvars()
 predictor.ready()
 
 
