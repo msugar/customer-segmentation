@@ -40,4 +40,4 @@ Keywords: Google Cloud Platform; GCP; Vertex AI Workbench; Docker; Custom Contai
   ```
 
 ## 4. Watch a video:
-  [![Alt text](https://img.youtube.com/vi/vieoHqt7pxo/hqdefault.jpg)](https://youtu.be/piIXd4gfZE4)
+  [![Alt text](https://i9.ytimg.com/vi/piIXd4gfZE4/mq2.jpg?sqp=CMj7uo0G&rs=AOn4CLCFCQ0pNdzHIlRY6xXV6u7Use8d5g)](https://youtu.be/piIXd4gfZE4)
