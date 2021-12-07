@@ -38,3 +38,6 @@ Keywords: Google Cloud Platform; GCP; Vertex AI Workbench; Docker; Custom Contai
   ```
   curl -X POST -H "Content-Type: application/json" <SERVICE_URL> -d "@input.json"
   ```
+
+## 4. Watch a video:
+  [![Alt text](https://img.youtube.com/vi/vieoHqt7pxo/hqdefault.jpg)](https://youtu.be/piIXd4gfZE4)
